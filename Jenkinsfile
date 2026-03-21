@@ -10,7 +10,7 @@ pipeline {
         // Checkout del repositorio
         stage('Checkout del repositorio') {
             steps {
-                git branch: 'main', url: 'https://github.com/TU_USUARIO/SDSS_Pipeline.git'
+                git branch: 'main', url: 'https://github.com/kev461/Machine-Learning-Predictive-Analytics-with-SDSS-Data-Docker-Jenkins.git'
             }
         }
 
@@ -29,10 +29,10 @@ pipeline {
                     if (!fileExists('outputs/modeloClasificacion.pkl') ||
                         !fileExists('outputs/modeloRegresion.pkl') ||
                         !fileExists('outputs/modeloClustering.pkl')) {
-                        echo "⚠️ Algunos modelos no existen. Se entrenarán automáticamente."
+                        echo "Algunos modelos no existen. Se entrenarán automáticamente."
                         sh 'python run.py'
                     } else {
-                        echo "✅ Todos los modelos existen. Continuando..."
+                        echo "Todos los modelos existen. Continuando..."
                     }
 
                     // Asegurarse que los modelos existen
@@ -51,7 +51,7 @@ pipeline {
         // Construcción de la imagen Docker
         stage('Build Docker') {
             steps {
-                echo '🏗️ Construyendo imagen Docker...'
+                echo 'Construyendo imagen Docker...'
                 sh 'docker build -t sdsspipeline:latest ./app'
             }
         }
@@ -70,10 +70,10 @@ pipeline {
         // Smoke test
         stage('Smoke Test') {
             steps {
-                echo '🔥 Verificando que el servicio responde...'
+                echo 'Verificando que el servicio responde...'
                 sh '''
                     sleep 3
-                    curl -f http://localhost:5000/health || exit 1
+                    curl -f http://localhost:5000/metricas || exit 1
                 '''
             }
         }
@@ -88,7 +88,7 @@ pipeline {
 
     post {
         always {
-            echo '✅ Pipeline completado. Artefactos guardados en Jenkins.'
+            echo 'Pipeline completado. Artefactos guardados en Jenkins.'
         }
     }
 }
