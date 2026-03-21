@@ -20,11 +20,11 @@ pipeline {
         stage('Instalación de dependencias') {
             steps {
                 // Instalación dentro de contenedor para no depender de Python en el host
-                bat """
-                docker run --rm -v %cd%:/app python:3.11-slim ^
-                    pip install --upgrade pip ^
-                    && pip install -r /app/requirements.txt
-                """
+                bat '''
+                docker run --rm -v "%cd%:/app" python:3.11-slim ^
+                sh -c "pip install --upgrade pip && pip install -r /app/requirements.txt"
+                '''
+
             }
         }
 
