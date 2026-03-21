@@ -32,15 +32,28 @@ pipeline {
         stage('Verificar modelos') {
             steps {
                 script {
-                    // Una sola ejecución que verifica, entrena si falta alguno y asegura existencia
-                    bat """
-                    docker run --rm -v %cd%:/app python:3.11-slim ^
-                        python -c "import os; \
-                        modelos = ['outputs/modeloClasificacion.pkl','outputs/modeloRegresion.pkl','outputs/modeloClustering.pkl']; \
-                        entrenar = [not os.path.exists(m) for m in modelos]; \
-                        if any(entrenar): import run; run.main(); \
-                        assert all(os.path.exists(m) for m in modelos)"
-                    """
+                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
+                        !fileExists('outputs\\modeloRegresion.pkl') ||
+                        !fileExists('outputs\\modeloClustering.pkl')) {
+
+                        echo "Modelos no encontrados. Entrenando..."
+
+                        bat '''
+                        docker run --rm -v "%cd%:/app" python:3.11-slim ^
+                        sh -c "pip install -r /app/requirements.txt && python /app/run.py"
+                        '''
+                    }
+
+                    // Verificación final (redundante)
+                    script {
+                        if (!fileExists('outputs\\modeloClasificacion.pkl') ||
+                            !fileExists('outputs\\modeloRegresion.pkl') ||
+                            !fileExists('outputs\\modeloClustering.pkl')) {
+                            error("Los modelos no se generaron correctamente")
+                        } else {
+                            echo "Modelos verificados correctamente"
+                        }
+                    }
                 }
             }
         }
