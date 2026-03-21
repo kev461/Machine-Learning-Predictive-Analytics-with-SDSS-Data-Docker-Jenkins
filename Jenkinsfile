@@ -16,102 +16,88 @@ pipeline {
             }
         }
 
-        // Instalación de dependencias en contenedor
+        //Instalación de dependencias
         stage('Instalación de dependencias') {
             steps {
+                // Instalación dentro de contenedor para no depender de Python en el host
                 bat '''
-                docker run --rm ^
-                -v "%WORKSPACE%:/app" ^
-                -w /app ^
-                python:3.11-slim ^
-                sh -c "pip install --upgrade pip && pip install -r requirements.txt"
+                docker run --rm -v "%cd%:/app" python:3.11-slim ^
+                sh -c "pip install --upgrade pip && pip install -r /app/requirements.txt"
                 '''
+
             }
         }
 
-        // Verificación de modelos con redundancia
+        //Verificación redundante de modelos
         stage('Verificar modelos') {
             steps {
                 script {
-                    def modelosExisten =
-                        fileExists('outputs\\modeloClasificacion.pkl') &&
-                        fileExists('outputs\\modeloRegresion.pkl') &&
-                        fileExists('outputs\\modeloClustering.pkl')
-
-                    if (!modelosExisten) {
-                        echo "Modelos no encontrados. Ejecutando entrenamiento..."
-
-                        bat '''
-                        docker run --rm ^
-                        -v "%WORKSPACE%:/app" ^
-                        -w /app ^
-                        python:3.11-slim ^
-                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py"
-                        '''
-                    } else {
-                        echo "Modelos ya existen, no se reentrena."
-                    }
-
                     if (!fileExists('outputs\\modeloClasificacion.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
                         !fileExists('outputs\\modeloClustering.pkl')) {
-                        error("ERROR: Los modelos no fueron generados correctamente")
-                    } else {
-                        echo "Modelos verificados correctamente"
+
+                        echo "Modelos no encontrados. Entrenando..."
+
+                        bat '''
+                        docker run --rm -v "%cd%:/app" python:3.11-slim ^
+                        sh -c "pip install -r /app/requirements.txt && python /app/run.py"
+                        '''
+                    }
+
+                    // Verificación final (redundante)
+                    script {
+                        if (!fileExists('outputs\\modeloClasificacion.pkl') ||
+                            !fileExists('outputs\\modeloRegresion.pkl') ||
+                            !fileExists('outputs\\modeloClustering.pkl')) {
+                            error("Los modelos no se generaron correctamente")
+                        } else {
+                            echo "Modelos verificados correctamente"
+                        }
                     }
                 }
             }
         }
 
-        // Pruebas básicas del dataset
+        //Pruebas básicas del dataset
         stage('Pruebas básicas del dataset') {
             steps {
-                bat '''
-                docker run --rm ^
-                -v "%WORKSPACE%:/app" ^
-                -w /app ^
-                python:3.11-slim ^
-                sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --test"
-                '''
+                // Ejecuta run.py con flag --test para validar pipeline
+                bat 'docker run --rm -v %cd%:/app python:3.11-slim python /app/run.py --test'
             }
         }
 
-        // Ejecución del sistema con Docker
-        stage('Ejecución del sistema') {
+        //Ejecución del script principal
+        stage('Ejecución principal') {
             steps {
-                bat '''
+                // Levantar Flask y entrenamiento principal dentro de Docker
+                bat """
                 docker stop sdss-container || exit 0
                 docker rm sdss-container || exit 0
-
                 docker build -t %IMAGE_NAME%:%IMAGE_TAG% .\\app
-
-                docker run -d ^
-                --name sdss-container ^
-                -p 5000:5000 ^
-                -v "%WORKSPACE%\\outputs:/app/outputs" ^
-                %IMAGE_NAME%:%IMAGE_TAG%
-                '''
+                docker run --name sdss-container -d -v %cd%\\outputs:/app/outputs -p 5000:5000 %IMAGE_NAME%:%IMAGE_TAG%
+                """
             }
         }
 
-        // Verificación del servicio
+        //Smoke Test (comprobación de Flask)
         stage('Smoke Test') {
             steps {
-                bat 'timeout /t 5 >nul & curl -f http://localhost:5000/metricas || exit 1'
+                bat 'timeout /t 3 & curl -f http://localhost:5000/metricas || exit 1'
             }
         }
 
-        // Almacenamiento de artefactos
+        //Almacenamiento de artefactos
         stage('Archivar artefactos') {
             steps {
                 archiveArtifacts artifacts: 'outputs\\**\\*.*', fingerprint: true
             }
         }
+
     }
 
     post {
         always {
-            echo 'Pipeline finalizado. Resultados disponibles en Jenkins.'
+            echo 'Pipeline completado. Artefactos guardados en Jenkins.'
         }
     }
 }
