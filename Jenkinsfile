@@ -45,9 +45,8 @@ pipeline {
                         docker run --rm ^
                         -v "%WORKSPACE%:/app" ^
                         -w /app ^
-                        -e PYTHONPATH=/app ^
                         python:3.11-slim ^
-                        sh -c "pip install -r requirements.txt && python run.py"
+                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py"
                         '''
                     } else {
                         echo "Modelos ya existen, no se reentrena."
@@ -71,9 +70,8 @@ pipeline {
                 docker run --rm ^
                 -v "%WORKSPACE%:/app" ^
                 -w /app ^
-                -e PYTHONPATH=/app ^
                 python:3.11-slim ^
-                sh -c "pip install -r requirements.txt && python run.py --test"
+                sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --test"
                 '''
             }
         }
