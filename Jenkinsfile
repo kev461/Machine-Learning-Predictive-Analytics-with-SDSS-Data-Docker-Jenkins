@@ -30,24 +30,24 @@ pipeline {
         stage('Verificar modelos') {
             steps {
                 script {
-                    if (!fileExists('outputs\\modeloKNN.pkl') ||
+                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
-                        !fileExists('outputs\\modeloKMeans.pkl')) {
+                        !fileExists('outputs\\modeloClustering.pkl')) {
 
-                        echo "Modelos no encontrados. Entrenando..."
+                        echo "Modelos no encontrados. Ejecutando verificación..."
 
                         bat '''
                         docker run --rm ^
                         -v "%WORKSPACE%:/app" ^
                         -w /app ^
                         python:3.11-slim ^
-                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --train"
+                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --verificar"
                         '''
                     }
 
-                    if (!fileExists('outputs\\modeloKNN.pkl') ||
+                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
-                        !fileExists('outputs\\modeloKMeans.pkl')) {
+                        !fileExists('outputs\\modeloClustering.pkl')) {
                         error("Los modelos no se generaron correctamente")
                     } else {
                         echo "Modelos verificados correctamente"
@@ -56,14 +56,14 @@ pipeline {
             }
         }
 
-        stage('Pruebas básicas del dataset') {
+        stage('Prueba rápida del pipeline') {
             steps {
                 bat '''
                 docker run --rm ^
                 -v "%WORKSPACE%:/app" ^
                 -w /app ^
                 python:3.11-slim ^
-                sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --test"
+                sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --verificar"
                 '''
             }
         }

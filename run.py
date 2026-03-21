@@ -55,13 +55,9 @@ def imagen(nombre):
 # ---------------- MAIN ----------------
 if __name__ == "__main__":
 
-    if "--train" in argv:
-        print("Modo entrenamiento")
+    if "--verificar" in argv:
+        print("Verificación")
         ejecutarPipeline()
-
-    elif "--test" in argv:
-        print("Modo test")
-        ejecutarPipeline(test=True)
 
     else:
         print("http://localhost:5000")
