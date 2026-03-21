@@ -87,11 +87,31 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 bat '''
-                echo Esperando a que el servidor inicie...
+                echo Verificando contenedor...
+                docker ps
 
-                ping 127.0.0.1 -n 6 >nul
+                echo Esperando a que Flask inicie...
 
-                curl -f http://localhost:5000/metricas || exit 1
+                set /a intentos=0
+
+                :loop
+                set /a intentos+=1
+
+                curl -f http://localhost:5000/metricas >nul 2>&1
+                if %errorlevel%==0 (
+                    echo Servidor activo
+                    exit /b 0
+                )
+
+                if %intentos% GEQ 10 (
+                    echo ERROR: servidor no responde
+                    docker logs sdss-container
+                    exit /b 1
+                )
+
+                echo Intento %intentos% fallido, reintentando...
+                ping 127.0.0.1 -n 3 >nul
+                goto loop
                 '''
             }
         }
