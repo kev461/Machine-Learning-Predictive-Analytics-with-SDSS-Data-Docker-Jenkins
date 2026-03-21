@@ -12,7 +12,7 @@ pipeline {
         // Checkout del repositorio
         stage('Checkout del repositorio') {
             steps {
-                git branch: 'main', url: 'https://github.com/TU_USUARIO/SDSS_Pipeline.git'
+                git branch: 'main', url: 'https://github.com/kev461/Machine-Learning-Predictive-Analytics-with-SDSS-Data-Docker-Jenkins.git'
             }
         }
 
