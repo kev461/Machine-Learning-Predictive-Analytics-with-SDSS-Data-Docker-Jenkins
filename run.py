@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory
 import json
 import os
+from sys import argv
 
 from app.pipeline import ejecutarPipeline
 
@@ -53,6 +54,16 @@ def imagen(nombre):
 
 # ---------------- MAIN ----------------
 if __name__ == "__main__":
-    print("http://localhost:5000")
-    print("http://localhost:5000/ejecutar?limite=10")
-    aplicacion.run(host="0.0.0.0", port=5000)
+
+    if "--train" in argv:
+        print("Modo entrenamiento")
+        ejecutarPipeline()
+
+    elif "--test" in argv:
+        print("Modo test")
+        ejecutarPipeline(test=True)
+
+    else:
+        print("http://localhost:5000")
+        print("http://localhost:5000/ejecutar?limite=10")
+        aplicacion.run(host="0.0.0.0", port=5000)
