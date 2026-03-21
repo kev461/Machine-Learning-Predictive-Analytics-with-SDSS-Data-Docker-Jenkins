@@ -2,84 +2,84 @@ pipeline {
     agent any
 
     environment {
-        OUTPUTS = "${WORKSPACE}/outputs"
+        OUTPUTS = "${WORKSPACE}\\outputs"
+        IMAGE_NAME = "sdsspipeline"
+        IMAGE_TAG = "latest"
     }
 
     stages {
 
+        // Checkout del repositorio
         stage('Checkout del repositorio') {
             steps {
-                git branch: 'main', url: 'https://github.com/kev461/Machine-Learning-Predictive-Analytics-with-SDSS-Data-Docker-Jenkins.git'
+                git branch: 'main', url: 'https://github.com/TU_USUARIO/SDSS_Pipeline.git'
             }
         }
 
+        //Instalación de dependencias
         stage('Instalación de dependencias') {
             steps {
-                bat 'python -m pip install --upgrade pip'
-                bat 'python -m pip install -r requirements.txt'
+                // Instalación dentro de contenedor para no depender de Python en el host
+                bat """
+                docker run --rm -v %cd%:/app python:3.11-slim ^
+                    pip install --upgrade pip ^
+                    && pip install -r /app/requirements.txt
+                """
             }
         }
 
+        //Verificación redundante de modelos
         stage('Verificar modelos') {
             steps {
                 script {
-                    if (!fileExists('outputs/modeloClasificacion.pkl') ||
-                        !fileExists('outputs/modeloRegresion.pkl') ||
-                        !fileExists('outputs/modeloClustering.pkl')) {
-                        echo "Algunos modelos no existen. Se entrenarán automáticamente."
-                        bat 'python run.py'
-                    } else {
-                        echo "Todos los modelos existen. Continuando..."
-                    }
-
+                    // Una sola ejecución que verifica, entrena si falta alguno y asegura existencia
                     bat """
+                    docker run --rm -v %cd%:/app python:3.11-slim ^
                         python -c "import os; \
-                        assert os.path.exists('outputs/modeloClasificacion.pkl'); \
-                        assert os.path.exists('outputs/modeloRegresion.pkl'); \
-                        assert os.path.exists('outputs/modeloClustering.pkl')"
+                        modelos = ['outputs/modeloClasificacion.pkl','outputs/modeloRegresion.pkl','outputs/modeloClustering.pkl']; \
+                        entrenar = [not os.path.exists(m) for m in modelos]; \
+                        if any(entrenar): import run; run.main(); \
+                        assert all(os.path.exists(m) for m in modelos)"
                     """
                 }
             }
         }
 
+        //Pruebas básicas del dataset
         stage('Pruebas básicas del dataset') {
             steps {
-                bat 'python run.py --test'
+                // Ejecuta run.py con flag --test para validar pipeline
+                bat 'docker run --rm -v %cd%:/app python:3.11-slim python /app/run.py --test'
             }
         }
 
-        stage('Build Docker') {
+        //Ejecución del script principal
+        stage('Ejecución principal') {
             steps {
-                echo 'Construyendo imagen Docker...'
-                bat 'docker build -t sdsspipeline:latest ./app'
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
+                // Levantar Flask y entrenamiento principal dentro de Docker
                 bat """
-                    docker stop sdss-container || exit 0
-                    docker rm sdss-container || exit 0
-                    docker run -d --name sdss-container -p 5000:5000 sdsspipeline:latest
+                docker stop sdss-container || exit 0
+                docker rm sdss-container || exit 0
+                docker build -t %IMAGE_NAME%:%IMAGE_TAG% .\\app
+                docker run --name sdss-container -d -v %cd%\\outputs:/app/outputs -p 5000:5000 %IMAGE_NAME%:%IMAGE_TAG%
                 """
             }
         }
 
+        //Smoke Test (comprobación de Flask)
         stage('Smoke Test') {
             steps {
-                echo 'Verificando que el servicio responde...'
-                bat """
-                    timeout /t 3
-                    curl -f http://localhost:5000/metricas || exit 1
-                """
+                bat 'timeout /t 3 & curl -f http://localhost:5000/metricas || exit 1'
             }
         }
 
-        stage('Almacenamiento de artefactos') {
+        //Almacenamiento de artefactos
+        stage('Archivar artefactos') {
             steps {
-                archiveArtifacts artifacts: 'outputs/**/*.*', fingerprint: true
+                archiveArtifacts artifacts: 'outputs\\**\\*.*', fingerprint: true
             }
         }
+
     }
 
     post {
