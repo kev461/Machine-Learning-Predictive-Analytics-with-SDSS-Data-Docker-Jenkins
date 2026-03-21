@@ -86,7 +86,13 @@ pipeline {
 
         stage('Smoke Test') {
             steps {
-                bat 'timeout /t 5 >nul & curl -f http://localhost:5000/metricas || exit 1'
+                bat '''
+                echo Esperando a que el servidor inicie...
+
+                ping 127.0.0.1 -n 6 >nul
+
+                curl -f http://localhost:5000/metricas || exit 1
+                '''
             }
         }
 
