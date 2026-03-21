@@ -74,7 +74,7 @@ pipeline {
                 docker stop sdss-container || exit 0
                 docker rm sdss-container || exit 0
 
-                docker build -t %IMAGE_NAME%:%IMAGE_TAG% .\\app
+                docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
 
                 docker run --name sdss-container -d ^
                 -v "%WORKSPACE%\\outputs:/app/outputs" ^
