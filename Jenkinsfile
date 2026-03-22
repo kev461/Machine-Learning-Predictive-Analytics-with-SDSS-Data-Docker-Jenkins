@@ -7,14 +7,6 @@ pipeline {
         IMAGE_TAG = "latest"
     }
 
-    // Función interna para ejecutar comandos y guardar logs
-    def runWithLog = { cmd, logName ->
-        bat """
-        if not exist outputs\\logs mkdir outputs\\logs
-        ${cmd} > outputs\\logs\\${logName}.log 2>&1
-        """
-    }
-
     stages {
 
         stage('Checkout') {
@@ -31,10 +23,12 @@ pipeline {
                         !fileExists('outputs\\modeloClustering.pkl')) {
 
                         echo "Generando modelos..."
-                        runWithLog(
-                            'docker run --rm -v "%WORKSPACE%:/app" -w /app python:3.11-slim sh -c "pip install -r requirements.txt && PYTHONPATH=/app python /app/run.py --verificar"',
-                            'verificar_modelos'
-                        )
+                        bat '''
+                        if not exist outputs\\logs mkdir outputs\\logs
+                        docker run --rm -v "%WORKSPACE%:/app" -w /app python:3.11-slim ^
+                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python /app/run.py --verificar" ^
+                        > outputs\\logs\\verificar_modelos.log 2>&1
+                        '''
                     }
                 }
             }
@@ -43,7 +37,10 @@ pipeline {
         stage('Build Docker') {
             steps {
                 script {
-                    runWithLog('docker build -t %IMAGE_NAME%:%IMAGE_TAG% .', 'docker_build')
+                    bat '''
+                    if not exist outputs\\logs mkdir outputs\\logs
+                    docker build -t %IMAGE_NAME%:%IMAGE_TAG% . > outputs\\logs\\docker_build.log 2>&1
+                    '''
                 }
             }
         }
@@ -51,7 +48,12 @@ pipeline {
         stage('Run Docker') {
             steps {
                 script {
-                    runWithLog('docker stop sdss-container 2>nul & docker rm sdss-container 2>nul & docker run -d --name sdss-container -v "%WORKSPACE%\\outputs:/app/outputs" -p 5000:5000 %IMAGE_NAME%:%IMAGE_TAG%', 'docker_run')
+                    bat '''
+                    if not exist outputs\\logs mkdir outputs\\logs
+                    docker stop sdss-container 2>nul
+                    docker rm sdss-container 2>nul
+                    docker run -d --name sdss-container -v "%WORKSPACE%\\outputs:/app/outputs" -p 5000:5000 %IMAGE_NAME%:%IMAGE_TAG% > outputs\\logs\\docker_run.log 2>&1
+                    '''
                 }
             }
         }
@@ -59,20 +61,17 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 script {
-                    // Loop de intentos
-                    def maxIntentos = 10
-                    def logFile = "${WORKSPACE}\\outputs\\logs\\smoke_test.log"
-                    bat """
+                    bat '''
                     if not exist outputs\\logs mkdir outputs\\logs
                     set /a intentos=0
                     :loop
                     set /a intentos+=1
-                    curl -f http://localhost:5000/metricas > ${logFile} 2>&1
+                    curl -f http://localhost:5000/metricas > outputs\\logs\\smoke_test.log 2>&1
                     if %errorlevel%==0 exit /b 0
-                    if %intentos% GEQ ${maxIntentos} exit /b 1
+                    if %intentos% GEQ 10 exit /b 1
                     ping 127.0.0.1 -n 3 >nul
                     goto loop
-                    """
+                    '''
                 }
             }
         }
