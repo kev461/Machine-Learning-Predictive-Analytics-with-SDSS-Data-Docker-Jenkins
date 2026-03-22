@@ -80,8 +80,8 @@ pipeline {
         stage('Run Docker (DEBUG)') {
             steps {
                 bat '''
-                docker stop sdss-container || exit 0
-                docker rm sdss-container || exit 0
+                docker stop sdss-container 2>nul
+                docker rm sdss-container 2>nul
 
                 echo ===== RUN (SIN -d PARA VER ERRORES) =====
 
