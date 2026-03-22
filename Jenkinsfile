@@ -9,12 +9,14 @@ pipeline {
 
     stages {
 
+        // Checkout del repositorio
         stage('Checkout del repositorio') {
             steps {
-                git branch: 'main', url: 'https://github.com/kev461/Machine-Learning-Predictive-Analytics-with-SDSS-Data-Docker-Jenkins.git'
+                git branch: 'main', url: 'https://github.com/TU_USUARIO/SDSS_Pipeline.git'
             }
         }
 
+        // Instalación de dependencias en contenedor
         stage('Instalación de dependencias') {
             steps {
                 bat '''
@@ -27,28 +29,33 @@ pipeline {
             }
         }
 
+        // Verificación de modelos con redundancia
         stage('Verificar modelos') {
             steps {
                 script {
-                    if (!fileExists('outputs\\modeloKNN.pkl') ||
-                        !fileExists('outputs\\modeloRegresion.pkl') ||
-                        !fileExists('outputs\\modeloKMeans.pkl')) {
+                    def modelosExisten =
+                        fileExists('outputs\\modeloClasificacion.pkl') &&
+                        fileExists('outputs\\modeloRegresion.pkl') &&
+                        fileExists('outputs\\modeloClustering.pkl')
 
-                        echo "Modelos no encontrados. Ejecutando verificación..."
+                    if (!modelosExisten) {
+                        echo "Modelos no encontrados. Ejecutando entrenamiento..."
 
                         bat '''
                         docker run --rm ^
                         -v "%WORKSPACE%:/app" ^
                         -w /app ^
                         python:3.11-slim ^
-                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --verificar"
+                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py"
                         '''
+                    } else {
+                        echo "Modelos ya existen, no se reentrena."
                     }
 
-                    if (!fileExists('outputs\\modeloKNN.pkl') ||
+                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
-                        !fileExists('outputs\\modeloKMeans.pkl')) {
-                        error("Los modelos no se generaron correctamente")
+                        !fileExists('outputs\\modeloClustering.pkl')) {
+                        error("ERROR: Los modelos no fueron generados correctamente")
                     } else {
                         echo "Modelos verificados correctamente"
                     }
@@ -56,66 +63,45 @@ pipeline {
             }
         }
 
-        stage('Prueba rápida del pipeline') {
+        // Pruebas básicas del dataset
+        stage('Pruebas básicas del dataset') {
             steps {
                 bat '''
                 docker run --rm ^
                 -v "%WORKSPACE%:/app" ^
                 -w /app ^
                 python:3.11-slim ^
-                sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --verificar"
+                sh -c "pip install -r requirements.txt && PYTHONPATH=/app python run.py --test"
                 '''
             }
         }
 
-        stage('Ejecución principal') {
+        // Ejecución del sistema con Docker
+        stage('Ejecución del sistema') {
             steps {
-                bat """
+                bat '''
                 docker stop sdss-container || exit 0
                 docker rm sdss-container || exit 0
 
-                docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+                docker build -t %IMAGE_NAME%:%IMAGE_TAG% .\\app
 
-                docker run --name sdss-container -d ^
-                -v "%WORKSPACE%\\outputs:/app/outputs" ^
+                docker run -d ^
+                --name sdss-container ^
                 -p 5000:5000 ^
+                -v "%WORKSPACE%\\outputs:/app/outputs" ^
                 %IMAGE_NAME%:%IMAGE_TAG%
-                """
-            }
-        }
-
-        stage('Smoke Test') {
-            steps {
-                bat '''
-                echo Verificando contenedor...
-                docker ps
-
-                echo Esperando a que Flask inicie...
-
-                set /a intentos=0
-
-                :loop
-                set /a intentos+=1
-
-                curl -f http://localhost:5000/metricas >nul 2>&1
-                if %errorlevel%==0 (
-                    echo Servidor activo
-                    exit /b 0
-                )
-
-                if %intentos% GEQ 10 (
-                    echo ERROR: servidor no responde
-                    docker logs sdss-container
-                    exit /b 1
-                )
-
-                echo Intento %intentos% fallido, reintentando...
-                ping 127.0.0.1 -n 3 >nul
-                goto loop
                 '''
             }
         }
 
+        // Verificación del servicio
+        stage('Smoke Test') {
+            steps {
+                bat 'timeout /t 5 >nul & curl -f http://localhost:5000/metricas || exit 1'
+            }
+        }
+
+        // Almacenamiento de artefactos
         stage('Archivar artefactos') {
             steps {
                 archiveArtifacts artifacts: 'outputs\\**\\*.*', fingerprint: true
@@ -125,7 +111,7 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline completado. Artefactos guardados en Jenkins.'
+            echo 'Pipeline finalizado. Resultados disponibles en Jenkins.'
         }
     }
 }
