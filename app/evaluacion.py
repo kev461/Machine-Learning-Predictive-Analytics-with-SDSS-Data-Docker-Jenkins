@@ -1,4 +1,4 @@
-from sklearn.metrics import accuracy_score, confusion_matrix, mean_squared_error, r2_score
+from sklearn.metrics import accuracy_score, confusion_matrix, mean_squared_error, r2_score, adjusted_rand_score
 import numpy as np
 
 def evaluarClasificacion(modelo, xTest, yTest):
@@ -13,14 +13,15 @@ def evaluarRegresion(modelo, xTest, yTest):
     r2 = r2_score(yTest, predicciones)
     return error, r2
 
-def evaluarClustering(predCluster):
-    valores, conteos = np.unique(predCluster, return_counts=True)
-
-    distribucion = dict(zip(valores.tolist(), conteos.tolist()))
-
+def evaluarClustering(predicciones, etiquetas_reales):
+    """
+    Calcula la precisión del clustering comparándolo con las etiquetas reales.
+    """
+    precision_ajustada = adjusted_rand_score(etiquetas_reales, predicciones)
+    
     resultado = {
-        "numeroClusters": len(valores),
-        "distribucion": distribucion
+        "precision": round(precision_ajustada, 4),
+        "algoritmo": "K-Means"
     }
-
+    
     return resultado

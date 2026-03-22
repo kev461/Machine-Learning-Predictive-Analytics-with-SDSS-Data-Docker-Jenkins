@@ -8,6 +8,7 @@ from app.clustering import entrenarKMeans
 from app.evaluacion import evaluarClasificacion, evaluarRegresion, evaluarClustering
 from app.utilidades import (
     guardarMetricas,
+    encoderDatosReales,
     graficarMatrizConfusion,
     graficarClusters,
     graficarRegresion,
@@ -67,7 +68,8 @@ def ejecutarPipeline(limite=5):
     resultados["regresion"] = dfResultadoReg.head(limite).to_dict(orient="records")
 
     # ===================== CLUSTERING =====================
-    datosCluster = obtenerDatosClustering(dfSDSS)
+    datosCluster,etiquetasreales = obtenerDatosClustering(dfSDSS)[0],obtenerDatosClustering(dfSDSS)[1]
+    labelEncoderDatosReales=encoderDatosReales(etiquetasreales)
 
     modeloCluster = cargarModelo("outputs/modeloKMeans.pkl")
 
@@ -77,10 +79,10 @@ def ejecutarPipeline(limite=5):
 
     predCluster = modeloCluster.predict(datosCluster)
 
-    metricasCluster = evaluarClustering(predCluster)
+    metricasCluster = evaluarClustering(predCluster,labelEncoderDatosReales)
     guardarMetricas(metricasCluster, "clustering.json")
     
-    graficarClusters(datosCluster, predCluster)
+    graficarClusters(datosCluster, predCluster, etiquetasreales)
 
     dfResultadoCluster = datosCluster.copy()
     dfResultadoCluster["cluster"] = predCluster

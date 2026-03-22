@@ -13,4 +13,7 @@ def dividirRegresion(dfSDSS):
     return xTrain, xTest, yTrain, yTest
 
 def obtenerDatosClustering(dfSDSS):
-    return dfSDSS[['u', 'g', 'r', 'i', 'z']]
+    lista=[]
+    lista.append(dfSDSS[['u', 'g', 'r', 'i', 'z']])
+    lista.append(dfSDSS['class'])
+    return lista
