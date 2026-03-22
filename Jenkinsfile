@@ -30,9 +30,9 @@ pipeline {
         stage('Verificar modelos') {
             steps {
                 script {
-                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
+                    if (!fileExists('outputs\\modeloKNN.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
-                        !fileExists('outputs\\modeloClustering.pkl')) {
+                        !fileExists('outputs\\modeloKMeans.pkl')) {
 
                         echo "Modelos no encontrados. Ejecutando verificación..."
 
@@ -45,9 +45,9 @@ pipeline {
                         '''
                     }
 
-                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
+                    if (!fileExists('outputs\\modeloKNN.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
-                        !fileExists('outputs\\modeloClustering.pkl')) {
+                        !fileExists('outputs\\modeloKMeans.pkl')) {
                         error("Los modelos no se generaron correctamente")
                     } else {
                         echo "Modelos verificados correctamente"
