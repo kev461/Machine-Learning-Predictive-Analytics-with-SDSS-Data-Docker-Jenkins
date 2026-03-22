@@ -15,6 +15,19 @@ pipeline {
             }
         }
 
+        stage('Instalar dependencias') {
+            steps {
+                script {
+                    bat '''
+                    if not exist outputs\\logs mkdir outputs\\logs
+                    docker run --rm -v "%WORKSPACE%:/app" -w /app python:3.11-slim ^
+                    sh -c "pip install --upgrade pip && pip install -r requirements.txt" ^
+                    > outputs\\logs\\instalar_dependencias.log 2>&1
+                    '''
+                }
+            }
+        }
+
         stage('Verificar modelos') {
             steps {
                 script {
@@ -26,7 +39,7 @@ pipeline {
                         bat '''
                         if not exist outputs\\logs mkdir outputs\\logs
                         docker run --rm -v "%WORKSPACE%:/app" -w /app python:3.11-slim ^
-                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python /app/run.py --verificar" ^
+                        sh -c "PYTHONPATH=/app python /app/run.py --verificar" ^
                         > outputs\\logs\\verificar_modelos.log 2>&1
                         '''
                     }
