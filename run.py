@@ -5,6 +5,8 @@ import os
 from sys import argv
 
 from app.pipeline import ejecutarPipeline
+from app.pruebasDataset import pruebas
+
 
 aplicacion = Flask(__name__)
 
@@ -59,6 +61,10 @@ if __name__ == "__main__":
     if "--verificar" in argv:
         print("Verificación")
         ejecutarPipeline()
+        
+    if "--testdataset" in argv:
+        print("Pruebas Dataset")
+        pruebas()
 
     else:
         print("http://localhost:5000")

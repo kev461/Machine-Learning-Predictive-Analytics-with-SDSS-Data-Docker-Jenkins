@@ -15,6 +15,18 @@ pipeline {
             }
         }
 
+        stage('Pruebas Dataset') {
+            steps {
+                bat '''
+                if not exist outputs\\logs mkdir outputs\\logs
+
+                docker run --rm -v "%WORKSPACE%:/app" %IMAGE_NAME%:%IMAGE_TAG% ^
+                python /app/run.py --testdataset ^
+                > outputs\\logs\\dataset_test.log 2>&1
+                '''
+            }
+        }
+
         stage('Verificar modelos') {
             steps {
                 script {
