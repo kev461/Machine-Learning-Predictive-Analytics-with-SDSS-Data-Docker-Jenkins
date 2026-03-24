@@ -60,12 +60,10 @@ if __name__ == "__main__":
 
     if "--verificar" in argv:
         print("Verificación")
-        ejecutarPipeline()
-        
-    if "--testdataset" in argv:
+        ejecutarPipeline()   
+    elif "--testdataset" in argv:
         print("Pruebas Dataset")
         pruebas()
-
     else:
         print("http://localhost:5000")
         print("http://localhost:5000/ejecutar?limite=10")
