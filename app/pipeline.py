@@ -16,6 +16,7 @@ from app.utilidades import (
     cargarModelo
 )
 
+# Este es el proceso que organiza todo el trabajo: abre los datos, enseña al programa, revisa si aprendió bien y guarda el resultado final.
 def ejecutarPipeline(limite=5):
     dfSDSS = cargarDatos("sdss_sample.csv")
 

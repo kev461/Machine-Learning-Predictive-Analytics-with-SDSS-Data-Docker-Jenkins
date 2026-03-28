@@ -11,6 +11,7 @@ from app.pruebasDataset import pruebas
 aplicacion = Flask(__name__)
 
 # ---------------- HOME ----------------
+# Mostramos los resultados y gráficas finales en una página para que cualquiera pueda verlos.
 @aplicacion.route("/")
 def inicio():
     limite = int(request.args.get("limite", 5))
@@ -26,12 +27,14 @@ def inicio():
     )
 
 # ---------------- EJECUTAR ----------------
+# Activamos manualmente el proceso para que el sistema vuelva a procesar toda la información.
 @aplicacion.route("/ejecutar")
 def ejecutar():
     limite = int(request.args.get("limite", 5))
     return jsonify(ejecutarPipeline(limite))
 
 # ---------------- METRICAS ----------------
+# Entregamos una lista con todos los puntajes de precisión obtenidos por el sistema.
 @aplicacion.route("/metricas")
 def metricas():
     salida = {}

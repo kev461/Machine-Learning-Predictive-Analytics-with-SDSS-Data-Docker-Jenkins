@@ -8,22 +8,25 @@ import seaborn as sns
 import joblib
 from sklearn.preprocessing import LabelEncoder
 
-
+# Anota en un archivo qué tan bien le fue al programa en sus tareas para poder verlo luego.
 def guardarMetricas(metricas, nombreArchivo):
     os.makedirs("outputs", exist_ok=True)
     with open(f"outputs/{nombreArchivo}", "w") as archivo:
         json.dump(metricas, archivo, indent=4)
 
+# Guarda todo lo que el programa aprendió para que no tenga que empezar desde cero la próxima vez.
 def guardarModelo(modelo, nombreArchivo):
     os.makedirs("outputs", exist_ok=True)
     joblib.dump(modelo, f"outputs/{nombreArchivo}")
 
+# Busca y trae el aprendizaje que se guardó anteriormente.
 def cargarModelo(rutaArchivo):
     if os.path.exists(rutaArchivo):
         return joblib.load(rutaArchivo)
     return None
 
 #============LABELENCODE PARA GRAFICAR CLUSTERING REAL=============
+# Cambia nombres por números para que el programa pueda hacer comparaciones y dibujos.
 def encoderDatosReales(etiquetasReales):
     print(f"Primeros 5 valores originales: \n{etiquetasReales[:5]}")
     encoder = LabelEncoder()
@@ -32,6 +35,7 @@ def encoderDatosReales(etiquetasReales):
     return etiquetasReales
 
 #============GRAFICAS=================
+# Crea una imagen que permite ver de forma sencilla dónde acertó el programa y dónde falló.
 def graficarMatrizConfusion(matriz):
     os.makedirs("outputs", exist_ok=True)
     plt.figure()
@@ -40,6 +44,7 @@ def graficarMatrizConfusion(matriz):
     plt.savefig("outputs/matrizConfusion.png")
     plt.close()
 
+# Genera gráficos para comparar los grupos que el programa armó contra los grupos que existen en la realidad.
 def graficarClusters(datos, etiquetas, etiquetasReales):
     etiquetasReales=encoderDatosReales(etiquetasReales)
     os.makedirs("outputs", exist_ok=True)
@@ -64,6 +69,7 @@ def graficarClusters(datos, etiquetas, etiquetasReales):
     plt.savefig("outputs/clusters.png")
     plt.close()
     
+# Dibuja una imagen de puntos para ver qué tan cerca estuvieron los cálculos del programa de los números reales.
 def graficarRegresion(valoresReales, valoresPredichos):
     os.makedirs("outputs", exist_ok=True)
     plt.figure()

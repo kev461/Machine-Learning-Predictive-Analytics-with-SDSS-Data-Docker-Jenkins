@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        // Definimos dónde se guardarán los resultados y cómo se llamará nuestro contenedor
         OUTPUTS = "${WORKSPACE}\\outputs"
         IMAGE_NAME = "sdsspipeline"
         IMAGE_TAG = "latest"
@@ -10,12 +11,15 @@ pipeline {
     stages {
 
         stage('Checkout') {
+            // Buscamos el código más nuevo del proyecto.
             steps {
+                // Descargamos el código más reciente desde GitHub
                 git branch: 'main', url: 'https://github.com/kev461/Machine-Learning-Predictive-Analytics-with-SDSS-Data-Docker-Jenkins.git'
             }
         }
 
         stage('Pruebas Dataset') {
+            // Se mira si los datos están listos para usarse.
             steps {
                 bat '''
                 if not exist outputs\\logs mkdir outputs\\logs
@@ -28,8 +32,10 @@ pipeline {
         }
 
         stage('Verificar modelos') {
+            // Si no tenemos un modelo guardado, se entrena.
             steps {
                 script {
+                    // Si no existen los archivos de los modelos, ejecutamos un proceso para crearlos
                     if (!fileExists('outputs\\modeloClasificacion.pkl') ||
                         !fileExists('outputs\\modeloRegresion.pkl') ||
                         !fileExists('outputs\\modeloClustering.pkl')) {
@@ -47,8 +53,10 @@ pipeline {
         }
 
         stage('Build Docker') {
+            // Ponemos todo en una caja especial (Docker) para que funcione en cualquier lado.
             steps {
                 script {
+                    // Construimos la imagen de Docker que contiene todo nuestro sistema
                     bat '''
                     if not exist outputs\\logs mkdir outputs\\logs
                     docker build -t %IMAGE_NAME%:%IMAGE_TAG% . > outputs\\logs\\docker_build.log 2>&1
@@ -58,8 +66,10 @@ pipeline {
         }
 
         stage('Run Docker') {
+            //Ponemos a funcionar el programa para que la gente pueda entrar a ver.
             steps {
                 script {
+                    // Hacemos una llamada rápida al sistema para confirmar que sí está encendido y respondiendo
                     bat '''
                     if not exist outputs\\logs mkdir outputs\\logs
                     docker stop sdss-container 2>nul
@@ -71,8 +81,10 @@ pipeline {
         }
 
         stage('Smoke Test') {
+            //Una prueba rápida para asegurar que la máquina prendió bien.
             steps {
                 script {
+                    // Hacemos una llamada rápida al sistema para confirmar que sí está encendido y respondiendo
                     bat '''
                     if not exist outputs\\logs mkdir outputs\\logs
                     set /a intentos=0
@@ -89,6 +101,7 @@ pipeline {
         }
 
         stage('Archivar') {
+            // Guardamos todos los resultados y gráficas finales en Jenkins para revisarlos luego
             steps {
                 archiveArtifacts artifacts: 'outputs\\**\\*.*', fingerprint: true
             }
@@ -97,6 +110,7 @@ pipeline {
 
     post {
         always {
+            // Mensaje final que indica que todo el proceso ha terminado
             echo 'Pipeline completado. Artefactos y logs guardados en Jenkins.'
         }
     }

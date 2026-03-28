@@ -3,6 +3,7 @@ from app.cargadorDatos import cargarDatos
 import sys
 #Valor de prueba
 
+# Antes de empezar, revisamos que toda la información esté completa y no falte ningún dato importante.
 def pruebas():
     try:
         dfSDSS = cargarDatos("sdss_sample.csv")
