@@ -2,119 +2,106 @@ pipeline {
     agent any
 
     environment {
-        // Credenciales seguras inyectadas desde Jenkins con prefijos únicos
-        HEART_MONGO_URI = credentials('HEART_MONGO_URI')
-        HEART_MONGO_DB = credentials('HEART_MONGO_DB')
-        HEART_MONGO_COLECCION = credentials('HEART_MONGO_COLECCION')
-        HEART_NGROK_TOKEN = credentials('HEART_NGROK_TOKEN')
+        // Definimos dónde se guardarán los resultados y cómo se llamará nuestro contenedor
+        OUTPUTS = "${WORKSPACE}\\outputs"
+        IMAGE_NAME = "sdsspipeline"
+        IMAGE_TAG = "latest"
     }
 
     stages {
+
         stage('Checkout') {
+            // Buscamos el código más nuevo del proyecto.
             steps {
-                git branch: 'main', url: 'https://github.com/kev461/HearthDiseaseStream.git'
-            }
-        }
-
-        stage('Setup Environment') {
-            steps {
-                script {
-                    // Creamos el directorio de logs de forma segura
-                    bat 'if not exist outputs\\logs mkdir outputs\\logs'
-                    
-                    // Limpiamos posibles espacios o saltos de línea de las credenciales de Jenkins
-                    def mongoUri = env.HEART_MONGO_URI.trim()
-                    def mongoDb = env.HEART_MONGO_DB.trim()
-                    def mongoColl = env.HEART_MONGO_COLECCION.trim()
-                    def ngrokToken = env.HEART_NGROK_TOKEN.trim()
-                    
-                    // Usamos writeFile para evitar problemas con caracteres especiales
-                    def envContent = """
-HEART_MONGO_URI=${mongoUri}
-HEART_MONGO_DB=${mongoDb}
-HEART_MONGO_COLECCION=${mongoColl}
-HEART_NGROK_TOKEN=${ngrokToken}
-""".trim()
-                    writeFile file: '.env', text: envContent
-                    echo "Archivo .env creado con prefijos HEART_ exitosamente."
-                }
-            }
-        }
-
-        stage('Build Image') {
-            steps {
-                // Construimos la imagen base una sola vez para usarla en pruebas y despliegue
-                bat 'docker build -t heart-disease-app .'
+                // Descargamos el código más reciente desde GitHub
+                git branch: 'main', url: 'https://github.com/kev461/Machine-Learning-Predictive-Analytics-with-SDSS-Data-Docker-Jenkins.git'
             }
         }
 
         stage('Pruebas Dataset') {
+            // Se mira si los datos están listos para usarse.
             steps {
                 bat '''
                 if not exist outputs\\logs mkdir outputs\\logs
-                docker run --rm -v "%WORKSPACE%:/app" heart-disease-app ^
-                python /app/modulos_datos/verificar_dataframe.py ^
-                > outputs\\logs\\heart_dataset_test.log 2>&1
+
+                docker run --rm -v "%WORKSPACE%:/app" %IMAGE_NAME%:%IMAGE_TAG% ^
+                python /app/run.py --testdataset ^
+                > outputs\\logs\\dataset_test.log 2>&1
                 '''
             }
         }
 
-        stage('Prueba Mongo') {
+        stage('Verificar modelos') {
+            // Si no tenemos un modelo guardado, se entrena.
             steps {
-                bat '''
-                if not exist outputs\\logs mkdir outputs\\logs
-                docker run --rm ^
-                -e HEART_MONGO_URI="%HEART_MONGO_URI%" ^
-                -e HEART_MONGO_DB="%HEART_MONGO_DB%" ^
-                -e HEART_MONGO_COLECCION="%HEART_MONGO_COLECCION%" ^
-                heart-disease-app ^
-                python /app/flujos/test_mongo.py ^
-                > outputs\\logs\\heart_mongo_test.log 2>&1
-                '''
+                script {
+                    // Si no existen los archivos de los modelos, ejecutamos un proceso para crearlos
+                    if (!fileExists('outputs\\modeloClasificacion.pkl') ||
+                        !fileExists('outputs\\modeloRegresion.pkl') ||
+                        !fileExists('outputs\\modeloClustering.pkl')) {
+
+                        echo "Generando modelos..."
+                        bat '''
+                        if not exist outputs\\logs mkdir outputs\\logs
+                        docker run --rm -v "%WORKSPACE%:/app" -w /app python:3.11-slim ^
+                        sh -c "pip install -r requirements.txt && PYTHONPATH=/app python /app/run.py --verificar" ^
+                        > outputs\\logs\\verificar_modelos.log 2>&1
+                        '''
+                    }
+                }
             }
         }
 
-        stage('Deploy Infrastructure') {
+        stage('Build Docker') {
+            // Ponemos todo en una caja especial (Docker) para que funcione en cualquier lado.
             steps {
-                bat '''
-                if not exist outputs\\logs mkdir outputs\\logs
-                if exist outputs\\checkpoint rmdir /S /Q outputs\\checkpoint
-                docker-compose down --remove-orphans
-                docker-compose up -d --build --force-recreate > outputs\\logs\\docker_compose_up.log 2>&1
-                '''
+                script {
+                    // Construimos la imagen de Docker que contiene todo nuestro sistema
+                    bat '''
+                    if not exist outputs\\logs mkdir outputs\\logs
+                    docker build -t %IMAGE_NAME%:%IMAGE_TAG% . > outputs\\logs\\docker_build.log 2>&1
+                    '''
+                }
+            }
+        }
+
+        stage('Run Docker') {
+            //Ponemos a funcionar el programa para que la gente pueda entrar a ver.
+            steps {
+                script {
+                    // Hacemos una llamada rápida al sistema para confirmar que sí está encendido y respondiendo
+                    bat '''
+                    if not exist outputs\\logs mkdir outputs\\logs
+                    docker stop sdss-container 2>nul
+                    docker rm sdss-container 2>nul
+                    docker run -d --name sdss-container -v "%WORKSPACE%\\outputs:/app/outputs" -p 5000:5000 %IMAGE_NAME%:%IMAGE_TAG% > outputs\\logs\\docker_run.log 2>&1
+                    '''
+                }
             }
         }
 
         stage('Smoke Test') {
+            //Una prueba rápida para asegurar que la máquina prendió bien.
             steps {
                 script {
+                    // Hacemos una llamada rápida al sistema para confirmar que sí está encendido y respondiendo
                     bat '''
                     if not exist outputs\\logs mkdir outputs\\logs
                     set /a intentos=0
                     :loop
                     set /a intentos+=1
-                    curl -f http://localhost:5000/stats > outputs\\logs\\smoke_test.log 2>&1
+                    curl -f http://localhost:5000/metricas > outputs\\logs\\smoke_test.log 2>&1
                     if %errorlevel%==0 exit /b 0
-                    if %intentos% GEQ 15 exit /b 1
-                    ping 127.0.0.1 -n 4 >nul
+                    if %intentos% GEQ 10 exit /b 1
+                    ping 127.0.0.1 -n 3 >nul
                     goto loop
                     '''
                 }
             }
         }
 
-        stage('Exponer URL') {
-            steps {
-                echo "--- REVISANDO ESTADO DE NGROK ---"
-                // Esperamos un poco a que ngrok intente conectar
-                bat 'ping 127.0.0.1 -n 5 >nul'
-                bat 'docker logs ngrok'
-                echo "--- API DE TÚNELES (JSON) ---"
-                bat 'curl -s http://localhost:4040/api/tunnels'
-            }
-        }
-
         stage('Archivar') {
+            // Guardamos todos los resultados y gráficas finales en Jenkins para revisarlos luego
             steps {
                 archiveArtifacts artifacts: 'outputs\\**\\*.*', fingerprint: true
             }
@@ -123,7 +110,8 @@ HEART_NGROK_TOKEN=${ngrokToken}
 
     post {
         always {
-            echo 'Pipeline completado. Revisar logs en los artefactos de Jenkins.'
+            // Mensaje final que indica que todo el proceso ha terminado
+            echo 'Pipeline completado. Artefactos y logs guardados en Jenkins.'
         }
     }
 }
