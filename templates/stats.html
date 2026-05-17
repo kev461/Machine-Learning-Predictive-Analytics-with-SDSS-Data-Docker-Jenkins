@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}HeartDisease Stream — Analytics{% endblock %}
+
+{% block content %}
+
+<div class="row g-4 fade-in">
+    <!-- COLUMNA IZQUIERDA: Gráficos Principales -->
+    <div class="col-lg-8">
+        <div class="row g-4">
+            <!-- Matriz de Confusión -->
+            <div class="col-12">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-grid-3x3-gap me-2"></i>Matriz de Confusión del Modelo</span>
+                        <span class="endpoint-badge">ML ENGINE</span>
+                    </div>
+                    <div class="card-body p-0 d-flex align-items-center justify-content-center" style="background: #000; min-height: 400px; border-radius: 0 0 20px 20px; overflow: hidden;">
+                        <img id="confusion-matrix-img" src="{{ url_for('static', filename='outputs/confusion_matrix.png') }}" 
+                             alt="Matriz de Confusión" style="max-width: 100%; max-height: 380px;"
+                             onerror="this.style.display='none'; document.getElementById('cm-error').style.display='block';">
+                        <div id="cm-error" style="display:none; color: var(--text-muted); text-align:center;">
+                            <i class="bi bi-cpu-fill" style="font-size:3rem; color: var(--accent-dim);"></i>
+                            <p class="mt-3">Calculando métricas en tiempo real...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen por Grupo (Tabla/Agregación) -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-bar-chart-line me-2"></i>Análisis por Categoría de Riesgo
+                    </div>
+                    <div class="card-body p-4" id="risk-summary-body">
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-warning" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: KPIs Verticales -->
+    <div class="col-lg-4">
+        <div class="row g-3">
+            <!-- KPIs Básicos -->
+            <div class="col-12">
+                <div class="stat-card">
+                    <div class="stat-label">Total Pacientes</div>
+                    <div class="stat-value" id="kpi-total">—</div>
+                    <i class="bi bi-people-fill stat-icon" style="position:absolute; right:20px; bottom:20px;"></i>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="stat-card" style="border-left: 4px solid var(--danger);">
+                    <div class="stat-label">Pacientes en Riesgo</div>
+                    <div class="stat-value" id="kpi-riesgo" style="color: var(--danger) !important;">—</div>
+                    <div class="mt-2" id="kpi-pct" style="font-size:0.9rem; color: var(--text-muted);">—</div>
+                </div>
+            </div>
+
+            <!-- Métricas de IA (Bento Squares) -->
+            <div class="col-12 mt-4">
+                <div style="font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--accent); margin-bottom: 10px; letter-spacing: 0.1em;">
+                    METRICAS DE DESEMPEÑO
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="stat-card p-3">
+                            <div class="stat-label" style="font-size:0.6rem;">Accuracy</div>
+                            <div class="stat-value" id="ml-accuracy" style="font-size:1.2rem;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card p-3">
+                            <div class="stat-label" style="font-size:0.6rem;">F1 Score</div>
+                            <div class="stat-value" id="ml-f1" style="font-size:1.2rem;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card p-3">
+                            <div class="stat-label" style="font-size:0.6rem;">Precision</div>
+                            <div class="stat-value" id="ml-precision" style="font-size:1.2rem;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card p-3">
+                            <div class="stat-label" style="font-size:0.6rem;">Recall</div>
+                            <div class="stat-value" id="ml-recall" style="font-size:1.2rem;">—</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="stat-card p-3">
+                            <div class="stat-label" style="font-size:0.6rem;">AUC-ROC</div>
+                            <div class="stat-value" id="ml-auc" style="font-size:1.2rem;">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Distribución Visual -->
+            <div class="col-12 mt-3">
+                <div class="card">
+                    <div class="card-body p-4" id="distribucion-body">
+                        <!-- Se llena vía JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- POWER BI (Full Width) -->
+<div class="row g-4 mt-4 fade-in">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-pie-chart-fill me-2"></i>Integración Power BI Desktop</span>
+                <a href="{{ url_for('servir_input', filename='HeartDisease.pbix') }}" class="btn btn-sm btn-primary">
+                    Descargar .pbix
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    {% for i in range(1, 5) %}
+                    <div class="col-md-3">
+                        <div class="pbi-img-container">
+                            <img src="{{ url_for('servir_output', filename='pbi_' ~ i ~ '.png') }}" 
+                                 class="img-fluid" style="border-radius: 10px;"
+                                 onerror="this.src='https://placehold.co/600x350/111/d4af37?text=Visualización+{{ i }}'">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function cargarStats() {
+        try {
+            const res = await fetch('/stats');
+            if (!res.ok) return;
+            const d = await res.json();
+
+            document.getElementById('kpi-total').textContent    = d.total_pacientes ?? '—';
+            document.getElementById('kpi-riesgo').textContent   = d.con_riesgo ?? '—';
+            document.getElementById('kpi-pct').textContent      = `Prevalencia: ${d.porcentaje_riesgo}%`;
+
+            if (d.ml_metrics) {
+                document.getElementById('ml-accuracy').textContent  = (d.ml_metrics.accuracy * 100).toFixed(1) + '%';
+                document.getElementById('ml-precision').textContent = (d.ml_metrics.precision * 100).toFixed(1) + '%';
+                document.getElementById('ml-recall').textContent    = (d.ml_metrics.recall * 100).toFixed(1) + '%';
+                document.getElementById('ml-f1').textContent        = (d.ml_metrics.f1 * 100).toFixed(1) + '%';
+                document.getElementById('ml-auc').textContent       = d.ml_metrics.auc_roc.toFixed(3);
+                
+                const img = document.getElementById('confusion-matrix-img');
+                img.src = "{{ url_for('static', filename='outputs/confusion_matrix.png') }}?t=" + new Date().getTime();
+                img.style.display = 'block';
+                document.getElementById('cm-error').style.display = 'none';
+            }
+
+            document.getElementById('distribucion-body').innerHTML = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="badge-riesgo">Riesgo</span>
+                        <span class="small text-muted">${d.porcentaje_riesgo}%</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); height:4px; border-radius:2px;">
+                        <div style="width:${d.porcentaje_riesgo}%; height:100%; background:var(--danger); border-radius:2px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="badge-sin-riesgo">Normal</span>
+                        <span class="small text-muted">${(100 - d.porcentaje_riesgo).toFixed(1)}%</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); height:4px; border-radius:2px;">
+                        <div style="width:${100 - d.porcentaje_riesgo}%; height:100%; background:var(--accent); border-radius:2px;"></div>
+                    </div>
+                </div>
+            `;
+        } catch(e) { console.error(e); }
+    }
+
+    async function cargarRiskSummary() {
+        try {
+            const res = await fetch('/risk-summary');
+            if (!res.ok) return;
+            const d = await res.json();
+            const grupos = Object.entries(d);
+            if (!grupos.length) return;
+
+            let html = '<div class="row g-3">';
+            for (const [grupo, vals] of grupos) {
+                const esRiesgo = grupo === 'riesgo';
+                html += `
+                <div class="col-md-6">
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:15px; padding:1.5rem;">
+                        <div class="mb-2">${esRiesgo ? '<span class="badge-riesgo">RIESGO ALTO</span>' : '<span class="badge-sin-riesgo">BAJO RIESGO</span>'}</div>
+                        <div class="d-flex flex-column gap-2 mt-3">
+                            <div class="d-flex justify-content-between small text-muted"><span>Edad promedio</span><span class="text-white">${vals.promedio_edad}</span></div>
+                            <div class="d-flex justify-content-between small text-muted"><span>Colesterol (avg)</span><span class="text-white">${vals.promedio_colesterol}</span></div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            html += '</div>';
+            document.getElementById('risk-summary-body').innerHTML = html;
+        } catch(e) { console.error(e); }
+    }
+
+    cargarStats();
+    cargarRiskSummary();
+    setInterval(() => { cargarStats(); cargarRiskSummary(); }, 30000);
+</script>
+{% endblock %}

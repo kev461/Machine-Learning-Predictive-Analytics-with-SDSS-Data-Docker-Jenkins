@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}HeartDisease Stream — Monitor Live{% endblock %}
+
+{% block content %}
+
+<div class="row g-4 fade-in">
+    
+    <!-- LADO IZQUIERDO: Formulario de Predicción (Sticky) -->
+    <div class="col-lg-4">
+        <div class="sticky-top" style="top: 100px; z-index: 10;">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-plus-circle me-2"></i>Nueva Evaluación
+                </div>
+                <div class="card-body p-4">
+                    <form id="predictionForm">
+                        <div class="row g-3">
+                            <!-- 6 Variables Obligatorias -->
+                            <div class="col-12">
+                                <label class="form-label small text-muted">Edad del Paciente *</label>
+                                <input type="number" class="form-control" name="Age" placeholder="Ej: 55" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Sexo *</label>
+                                <select class="form-select" name="Sex" required>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Tipo Dolor *</label>
+                                <select class="form-select" name="ChestPainType" required>
+                                    <option value="ASY">Asintomático</option>
+                                    <option value="NAP">No-Anginal</option>
+                                    <option value="ATA">Atípico</option>
+                                    <option value="TA">Típico</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Presión Art. *</label>
+                                <input type="number" class="form-control" name="RestingBP" value="120" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Colesterol *</label>
+                                <input type="number" class="form-control" name="Cholesterol" value="200" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted">Pendiente ST *</label>
+                                <select class="form-select" name="ST_Slope" required>
+                                    <option value="Flat">Plano</option>
+                                    <option value="Up">Ascendente</option>
+                                    <option value="Down">Descendente</option>
+                                </select>
+                            </div>
+
+                            <!-- 5 Variables Adicionales con valores por defecto -->
+                            <div class="col-12 mt-3">
+                                <hr style="border-color: var(--border);">
+                                <div class="small text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Variables Adicionales (Con valores por defecto)</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Azúcar Ayunas</label>
+                                <select class="form-select" name="FastingBS">
+                                    <option value="0" selected>Menor a 120 mg/dl</option>
+                                    <option value="1">Mayor a 120 mg/dl</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">ECG Reposo</label>
+                                <select class="form-select" name="RestingECG">
+                                    <option value="Normal" selected>Normal</option>
+                                    <option value="ST">Anormalidad ST-T</option>
+                                    <option value="LVH">Hipertrofia V. Izq.</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Frec. Max (HR)</label>
+                                <input type="number" class="form-control" name="MaxHR" value="150">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Angina Ejercicio</label>
+                                <select class="form-select" name="ExerciseAngina">
+                                    <option value="N" selected>No</option>
+                                    <option value="Y">Sí</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted">Depresión ST (Oldpeak)</label>
+                                <input type="number" step="0.1" class="form-control" name="Oldpeak" value="0.0">
+                            </div>
+                            <div class="col-12 mt-4">
+                                <button type="submit" id="btnPredict" class="btn btn-primary w-100">
+                                    <i class="bi bi-cpu me-2"></i>EJECUTAR PREDICCIÓN
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Resultado Rápido (Se queda fijo hasta que se haga otra predicción) -->
+                    <div id="quickResult" class="mt-4 p-4 rounded-4" style="display:none; background: rgba(212, 175, 55, 0.05); border: 1px solid var(--border);">
+                        <div style="font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--accent); margin-bottom: 1rem; letter-spacing: 0.1em;">
+                            DIAGNÓSTICO GENERADO
+                        </div>
+                        <div id="resBadge" class="mb-3"></div>
+                        <div class="d-flex align-items-end gap-2">
+                            <div id="resProb" class="stat-value" style="font-size: 2.2rem;"></div>
+                            <div class="small text-muted mb-2">Confianza</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LADO DERECHO: Historial de Monitorización (Ajax Update) -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-activity me-2"></i>Historial Clínico en Tiempo Real</span>
+                <span class="endpoint-badge">LIVE REFRESH</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 800px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Paciente</th>
+                                <th>Signos Vitales</th>
+                                <th>Realidad (Dataset)</th>
+                                <th>Predicción IA</th>
+                                <th>Confianza</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historialBody">
+                            <!-- Se llena dinámicamente -->
+                            <tr id="loader">
+                                <td colspan="6" class="text-center p-5">
+                                    <div class="spinner-border text-warning" role="status"></div>
+                                    <div class="mt-2 text-muted">Sincronizando con MongoDB...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function actualizarTabla() {
+        try {
+            const res = await fetch('/patients');
+            const docs = await res.json();
+            const body = document.getElementById('historialBody');
+            
+            let html = '';
+            docs.forEach(item => {
+                const esRiesgoReal = item.HeartDisease == 1 || item.HeartDisease == 1.0;
+                const esNormalReal = item.HeartDisease == 0 || item.HeartDisease == 0.0;
+                const esRiesgoPred = item.prediccion === 'riesgo';
+                
+                const badgeReal = esRiesgoReal 
+                    ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2">RIESGO</span>'
+                    : esNormalReal 
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2">NORMAL</span>'
+                        : '<span class="badge bg-secondary-subtle text-muted border border-secondary-subtle px-2" style="opacity: 0.6;">NO APLICA</span>';
+                
+                const badgePred = esRiesgoPred
+                    ? '<span class="badge-riesgo">RIESGO</span>'
+                    : '<span class="badge-sin-riesgo">NORMAL</span>';
+
+                html += `
+                <tr>
+                    <td>
+                        <div class="fw-bold">${Math.round(item.Age)} años</div>
+                        <div class="small text-muted">${item.Sex === 'M' ? 'Hombre' : 'Mujer'}</div>
+                    </td>
+                    <td>
+                        <div class="small">Presión: ${Math.round(item.RestingBP)} / Colest: ${Math.round(item.Cholesterol)}</div>
+                        <div class="small text-muted">Pendiente ST: ${item.ST_Slope}</div>
+                    </td>
+                    <td>${badgeReal}</td>
+                    <td>${badgePred}</td>
+                    <td>
+                        <div class="fw-bold" style="color: var(--accent);">
+                            ${(item.probabilidad * 100).toFixed(1)}%
+                        </div>
+                    </td>
+                    <td class="small text-muted">${item.timestamp}</td>
+                </tr>`;
+            });
+            body.innerHTML = html;
+        } catch(e) { console.error("Error actualizando tabla:", e); }
+    }
+
+    const form = document.getElementById('predictionForm');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnPredict');
+        const originalText = btn.innerHTML;
+        
+        // Estado de carga
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PROCESANDO...';
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const res = await fetch('/predictions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+
+            // Mostrar resultado rápido (Sin quitarlo)
+            const qRes = document.getElementById('quickResult');
+            const resBadge = document.getElementById('resBadge');
+            const resProb = document.getElementById('resProb');
+            
+            qRes.style.display = 'block';
+            resBadge.innerHTML = result.prediccion === 'riesgo' 
+                ? '<span class="badge-riesgo" style="font-size:1rem; padding: 8px 16px;">RIESGO DETECTADO</span>' 
+                : '<span class="badge-sin-riesgo" style="font-size:1rem; padding: 8px 16px;">BAJO RIESGO</span>';
+            resProb.textContent = (result.probabilidad * 100).toFixed(1) + '%';
+            resProb.style.color = result.prediccion === 'riesgo' ? 'var(--danger)' : 'var(--accent)';
+
+            // Feedback en el botón
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>COMPLETADO';
+            btn.classList.replace('btn-primary', 'btn-success');
+
+            // Actualizar la tabla sin recargar la página
+            await actualizarTabla();
+
+            // Restaurar botón después de 3 segundos
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.classList.replace('btn-success', 'btn-primary');
+            }, 3000);
+
+        } catch (err) {
+            alert("Error: " + err);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
+
+    // Carga inicial y refresco automático cada 10 segundos
+    actualizarTabla();
+    setInterval(actualizarTabla, 10000);
+</script>
+{% endblock %}
