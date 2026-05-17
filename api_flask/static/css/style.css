@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:wght@700&family=Space+Mono&display=swap');
+
+/* ── Onyx Glass Design System ── */
+:root {
+    color-scheme: dark; /* Forzar controles del navegador oscuros */
+    --bg:             #000000;
+    --surface:        rgba(20, 20, 20, 0.7); /* Cristal Oscuro */
+    --surface-hover:  rgba(30, 30, 30, 0.85);
+    --nav:            rgba(10, 10, 10, 0.9);
+    --border:         rgba(212, 175, 55, 0.25); /* Oro sutil */
+    --accent:         #d4af37; /* Gold */
+    --accent-bright:  #f3cf65; /* Gold Bright */
+    --accent-dim:     rgba(212, 175, 55, 0.1);
+    --text:           #ffffff;
+    --text-muted:     #a0a0a0;
+    --danger:         #ff4d4d;
+    --success:        #d4af37; /* Mantenemos el oro para éxito en este tema */
+    --glass-blur:     blur(18px);
+    --shadow-gold:    0 10px 40px -10px rgba(212, 175, 55, 0.15);
+}
+
+/* Estilo para los desplegables del navegador */
+option {
+    background-color: #111 !important;
+    color: #fff !important;
+}
+
+/* ── Reset & Base ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text) !important;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
+    background-attachment: fixed;
+}
+
+/* Forzar visibilidad en elementos comunes */
+p, span, label, td, th, h1, h2, h3, h4, h5, h6 {
+    color: inherit;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* ── Navbar Onyx ── */
+.navbar {
+    background-color: var(--nav);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--accent) !important;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.navbar-brand span {
+    color: #fff;
+    font-weight: 300;
+}
+
+.nav-link {
+    color: var(--text-muted) !important;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 1.2rem !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--accent) !important;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+/* ── Layout ── */
+.main-content {
+    padding: 3rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ── Onyx Glass Cards ── */
+.card, .stat-card {
+    background-color: var(--surface);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-gold);
+    color: var(--text) !important;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.card-header {
+    background-color: rgba(212, 175, 55, 0.05);
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 1.8rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+/* ── Stat Cards Luxury ── */
+.stat-card {
+    padding: 2rem;
+    text-align: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    background-color: var(--surface-hover);
+    border-color: var(--accent);
+    box-shadow: 0 25px 50px -12px rgba(212, 175, 55, 0.25);
+}
+
+.stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.2em;
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #000;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: 12px;
+    padding: 0.8rem 2rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: transparent;
+    color: var(--accent);
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+}
+
+/* ── Tables Onyx ── */
+.table {
+    color: var(--text) !important;
+}
+
+.table thead th {
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--accent);
+    border-bottom: 2px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    padding: 1.2rem;
+}
+
+.table td {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 1.2rem;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(212, 175, 55, 0.05);
+}
+
+/* ── Badges Luxury ── */
+.badge-riesgo {
+    background: rgba(255, 77, 77, 0.1);
+    color: #ff4d4d;
+    border: 1px solid rgba(255, 77, 77, 0.3);
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+}
+
+.badge-sin-riesgo {
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+}
+
+/* ── Form Inputs ── */
+.form-control, .form-select {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid var(--border) !important;
+    color: #ffffff !important; /* Texto escrito en blanco */
+    border-radius: 12px;
+    padding: 0.8rem;
+}
+
+.form-control:focus {
+    background: rgba(255,255,255,0.1) !important;
+    border-color: var(--accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.2) !important;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important; /* Placeholder legible */
+}
+
+/* ── Utilities ── */
+.endpoint-badge {
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    padding: 4px 12px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+::-webkit-scrollbar-track { background: #000; }

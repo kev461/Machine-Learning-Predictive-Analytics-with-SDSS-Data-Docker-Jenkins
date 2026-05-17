@@ -1,6 +1,10 @@
-pandas
-scikit-learn
-matplotlib
-seaborn
+pyspark==3.5.3
+pymongo
+python-dotenv
 flask
-joblib
+flask-cors
+numpy
+scikit-learn
+seaborn
+matplotlib
+kafka-python

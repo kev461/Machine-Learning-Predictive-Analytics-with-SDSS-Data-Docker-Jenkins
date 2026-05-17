@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}HeartDisease Stream — Inicio{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION ONYX -->
+<div class="row mb-5 fade-in">
+    <div class="col-12 text-center">
+        <div class="py-5">
+            <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--accent); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 1.5rem;">
+                <i class="bi bi-broadcast me-2"></i> Real-Time Medical Intelligence
+            </div>
+            <h1 style="font-family: 'Outfit', sans-serif; font-size: 4rem; font-weight: 700; color: #fff; letter-spacing: -0.02em;">
+                HEART<span style="color: var(--accent);">DISEASE</span>&thinsp;STREAM
+            </h1>
+            <p class="mt-4 mx-auto" style="color: var(--text-muted); line-height: 1.8; max-width: 700px; font-size: 1.1rem;">
+                Un ecosistema avanzado de predicción cardiovascular procesando flujos de datos en tiempo real mediante 
+                <span class="text-white">PySpark</span>, orquestado con <span class="text-white">Kafka</span> y 
+                visualizado en una interfaz de lujo con persistencia en <span class="text-white">MongoDB Atlas</span>.
+            </p>
+            <div class="d-flex gap-3 justify-content-center mt-5">
+                <a href="{{ url_for('vista_pacientes') }}" class="btn btn-primary">
+                    <i class="bi bi-activity me-2"></i>LIVE MONITOR
+                </a>
+                <a href="{{ url_for('vista_stats') }}" class="btn btn-outline-primary" style="border-color: var(--border); color: #fff; padding: 0.8rem 2rem; border-radius: 12px; text-decoration: none;">
+                    <i class="bi bi-bar-chart me-2"></i>ANALYTICS
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GRID DE CAPACIDADES (BENTO STYLE) -->
+<div class="row g-4 mb-5 fade-in">
+    <!-- IA Predictiva -->
+    <div class="col-md-4">
+        <div class="card h-100 p-4">
+            <div class="mb-4"><i class="bi bi-cpu-fill" style="font-size: 2rem; color: var(--accent);"></i></div>
+            <h4 class="mb-3">ML Intelligence</h4>
+            <p class="text-muted small">Implementación de <strong>Gradient-Boosted Trees (GBT)</strong> para clasificación binaria de riesgo con precisión superior al 90%.</p>
+        </div>
+    </div>
+    <!-- Streaming -->
+    <div class="col-md-4">
+        <div class="card h-100 p-4">
+            <div class="mb-4"><i class="bi bi-lightning-charge-fill" style="font-size: 2rem; color: var(--accent);"></i></div>
+            <h4 class="mb-3">Structured Streaming</h4>
+            <p class="text-muted small">Procesamiento paralelo mediante <strong>Spark Streaming</strong> conectando brokers de Kafka para latencia ultra-baja.</p>
+        </div>
+    </div>
+    <!-- Data Lake -->
+    <div class="col-md-4">
+        <div class="card h-100 p-4">
+            <div class="mb-4"><i class="bi bi-database-fill-check" style="font-size: 2rem; color: var(--accent);"></i></div>
+            <h4 class="mb-3">Cloud Persistence</h4>
+            <p class="text-muted small">Almacenamiento distribuido en <strong>MongoDB Atlas</strong>, permitiendo consultas rápidas para Power BI y dashboards.</p>
+        </div>
+    </div>
+</div>
+
+<!-- API ENDPOINTS RAPIDOS -->
+<div class="row fade-in">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-terminal me-2"></i>API REST INTERFACE</div>
+            <div class="card-body p-4">
+                <div class="row g-3 text-center">
+                    <div class="col-md-3">
+                        <div class="p-3" style="border: 1px solid var(--border); border-radius: 12px;">
+                            <span class="endpoint-badge mb-2">GET</span>
+                            <div class="fw-bold mt-2">/patients</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3" style="border: 1px solid var(--border); border-radius: 12px;">
+                            <span class="endpoint-badge mb-2">POST</span>
+                            <div class="fw-bold mt-2">/predictions</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3" style="border: 1px solid var(--border); border-radius: 12px;">
+                            <span class="endpoint-badge mb-2">GET</span>
+                            <div class="fw-bold mt-2">/stats</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3" style="border: 1px solid var(--border); border-radius: 12px;">
+                            <span class="endpoint-badge mb-2">GET</span>
+                            <div class="fw-bold mt-2">/risk-summary</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

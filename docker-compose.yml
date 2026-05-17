@@ -1,0 +1,126 @@
+name: heart-disease-stream
+services:
+
+  # ── Servicio 0: Preparación ──────────────────────────────────────────────────
+  preparador:
+    build: .
+    container_name: preparador
+    command: python main.py
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
+  # ── Servicio 1: Broker Kafka (NUEVO) ─────────────────────────────────────────
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"   # Puerto para conectarse desde fuera del contenedor
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller 
+
+      # ── Cómo escucha conexiones ──
+      # PLAINTEXT:9092 → para productor y Spark
+      # CONTROLLER:9093 → para administración interna KRaft
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092   # Dirección que anuncia a los clientes
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+      # ── Configuración del clúster ──
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1   
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk       
+
+    volumes:
+      - kafka_data:/var/lib/kafka/data  
+
+    # Verifica que Kafka esté listo antes de que el productor intente conectarse
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+    depends_on:
+      preparador:
+        condition: service_completed_successfully
+
+  # ── Servicio 2: Productor Kafka ───────────────────────────────────────────────
+  # Reemplaza simulacion_stream.py de HeartDiseaseStream.
+  # En vez de mover archivos a una carpeta, publica mensajes JSON al topic heart-records.
+  productor:
+    build: .
+    container_name: productor
+    command: python modulos_stream/producer.py
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      preparador:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy   # Espera a que Kafka esté listo antes de publicar
+    restart: unless-stopped
+
+  # ── Servicio 3: Procesamiento con Spark Streaming ────────────────────────────
+  # Igual que en HeartDiseaseStream pero lee del topic Kafka en vez de archivos CSV.
+  spark-processor:
+    build: .
+    container_name: spark_processor
+    command: python modulos_stream/spark_stream.py
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      preparador:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy   # También espera a que Kafka esté listo
+    restart: unless-stopped
+
+  # ── Servicio 4: Interfaz Web y API Flask ─────────────────────────────────────
+  # Igual que en HeartDiseaseStream.
+  api-web:
+    build: .
+    container_name: api_web
+    command: python api_flask/app.py
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      preparador:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ── Servicio 5: Túnel de exposición externa (Bono) ───────────────────────────
+  # Igual que en HeartDiseaseStream.
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    ports:
+      - "4040:4040"
+    command:
+      - http
+      - api-web:5000
+    environment:
+      - NGROK_AUTHTOKEN=${HEART_NGROK_TOKEN}
+    depends_on:
+      - api-web
+    restart: unless-stopped
+
+volumes:
+  kafka_data:   # Volumen para persistir los mensajes de Kafka
+
+networks:
+  default:
+    name: kafkamed_network
