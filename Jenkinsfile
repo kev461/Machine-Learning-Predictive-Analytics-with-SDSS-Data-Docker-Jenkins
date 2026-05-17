@@ -78,6 +78,7 @@ HEART_NGROK_TOKEN=${ngrokToken}
             steps {
                 bat '''
                 if not exist outputs\\logs mkdir outputs\\logs
+                if exist outputs\\checkpoint rmdir /S /Q outputs\\checkpoint
                 docker-compose down --remove-orphans
                 docker-compose up -d --build --force-recreate > outputs\\logs\\docker_compose_up.log 2>&1
                 '''

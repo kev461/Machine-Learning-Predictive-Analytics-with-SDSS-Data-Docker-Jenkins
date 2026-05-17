@@ -28,8 +28,8 @@ def guardar_predicciones(coleccion, df_final):
             "ExerciseAngina": f_dict.get("ExerciseAngina"),
             "Oldpeak":        f_dict.get("Oldpeak"),
             "ST_Slope":       f_dict.get("ST_Slope"),
-            # Si no existe HeartDisease (manual), guardar "No Aplica"
-            "HeartDisease":   f_dict.get("HeartDisease") if f_dict.get("HeartDisease") is not None else "No Aplica",
+            # Si no existe HeartDisease (manual), guardar "-1": No aplica
+            "HeartDisease":   f_dict.get("HeartDisease") if f_dict.get("HeartDisease") is not None else "-1",
             # Resultado del modelo
             "prediccion":     f_dict.get("prediccion"),
             "probability":    prob_list,
